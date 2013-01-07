@@ -13,6 +13,8 @@
 "				error message.
 "				Avoid clobbering search history with
 "				:substitute.
+"				Don't clobber the default register with the last
+"				deleted match line.
 "				Consistently beep on d%<Space> error.
 "				Return status to enable repeating via
 "				repeat.vim.
@@ -35,7 +37,7 @@ if exists('g:loaded_matchit') && g:loaded_matchit
 	let l:matchCnt = 0
 	let l:matchStart = 0
 	while l:matchStart < len(a:expr)
-	    let l:matchStart = match( a:expr, a:pattern, l:matchStart )
+	    let l:matchStart = match(a:expr, a:pattern, l:matchStart)
 	    if l:matchStart == -1
 		break
 	    endif
@@ -57,7 +59,7 @@ if exists('g:loaded_matchit') && g:loaded_matchit
 	for l:matchPat in [ b:match_ini, b:match_tail ]
 	    let l:splitPatterns = []
 	    let l:pat = ''
-	    for l:part in split( l:matchPat, '\\|' )
+	    for l:part in split(l:matchPat, '\\|')
 		let l:fullPat = l:pat . l:part
 		if s:MatchNum(l:fullPat, '\\%\?(') > s:MatchNum(l:fullPat, '\\)')
 		    " We split an inner (i.e. contained in a \() or \%() group)
@@ -98,8 +100,8 @@ if exists('g:loaded_matchit') && g:loaded_matchit
     function! s:DeleteLines( positions )
 	" Delete unique lines from end to begin, so that the line numbers remain
 	" valid throughout the operation.
-	let l:lines = s:GetUniqueLines( a:positions )
-	for l:line in reverse( sort(l:lines, 's:ScalarCompareNumerical') )
+	let l:lines = s:GetUniqueLines(a:positions)
+	for l:line in reverse(sort(l:lines, 's:ScalarCompareNumerical'))
 	    execute l:line . 'delete _'
 	endfor
 	echo len(l:lines) 'fewer lines'
@@ -110,7 +112,7 @@ if exists('g:loaded_matchit') && g:loaded_matchit
 	" The 'html' filetype uses this to start the match at the tag name, not
 	" the <.
 	if a:pattern =~# '\\@<=' || a:pattern =~# '\\zs'
-	    return substitute( a:pattern, '\\@<=', '\\%#', '' )
+	    return substitute(a:pattern, '\\@<=', '\\%#', '')
 	endif
 
 	" If the pattern already contains a cursor position match, do nothing.
@@ -123,9 +125,9 @@ if exists('g:loaded_matchit') && g:loaded_matchit
 	return '\%#' . a:pattern
     endfunction
     function! s:DeleteMatches( positions, patterns )
-	let l:sortedPositions = sort( a:positions, 's:ListComparePositions' )
+	let l:sortedPositions = sort(a:positions, 's:ListComparePositions')
 "****D echomsg '**** sortPos' string(l:sortedPositions)
-	let l:allPatterns = join( map( keys(a:patterns), 's:ProcessPatternForReplacement(v:val)'), '\|' )
+	let l:allPatterns = join(map(keys(a:patterns), 's:ProcessPatternForReplacement(v:val)'), '\|')
 "****D echomsg '**** allPat' l:allPatterns
 
 	for l:pos in reverse(l:sortedPositions)
@@ -156,14 +158,14 @@ if exists('g:loaded_matchit') && g:loaded_matchit
 	endwhile
 	call s:Tally(l:matches, l:patterns)
 
-echomsg '**** Found' string(l:positions)
-echomsg '**** matches' string(keys(l:matches))
-echomsg '**** patterns' string(keys(l:patterns))
-	if len(l:matches) < 2
+"****D echomsg '**** Found' string(l:positions)
+"****D echomsg '**** matches' string(keys(l:matches))
+"****D echomsg '**** patterns' string(keys(l:patterns))
+	if len(l:positions) < 2
 	    " Found no or only one part of a match.
 	    let l:action = ''
 	else
-	    let l:maxMatchLen = max( map( keys(l:matches), 'len(v:val)' ) )
+	    let l:maxMatchLen = max(map(keys(l:matches), 'len(v:val)'))
 	    let l:isSimpleMatchPair = (len(l:positions) == 2 && (l:maxMatchLen == 1 || (l:maxMatchLen == 2 && sort(keys(l:matches)) == ['*/', '/*'])))
 	    let l:isMultiLineMatch = (len(s:GetUniqueLines(l:positions)) > 1)
 	    if ! l:isSimpleMatchPair && isMultiLineMatch
@@ -250,21 +252,72 @@ else
 endif
 
 
-function! s:GetPairPositions()
-    silent! normal! %
-    let l:posA = getpos('.')
-    silent! normal! %
-    let l:posB = getpos('.')
+if exists('g:loaded_matchit') && g:loaded_matchit
+    function! s:GetPairPositions()
+	let l:pairPositions = [[], []]
 
-    if l:posA == l:posB
-	return [[], []]
-    elseif l:posA[1] > l:posB[1] || l:posA[1] == l:posB[1] && l:posA[2] > l:posB[2]
-	" A is after B; swap positions.
-	return [l:posB, l:posA]
-    else
-	return [l:posA, l:posB]
-    endif
-endfunction
+	" Enable matchit debugging to get hold of the internal data.
+	let b:match_debug = 1
+
+	let l:positions = []
+	let l:lengths = []
+
+	let l:current = getpos('.')
+	silent! normal g%
+	if exists('b:match_match') && l:current != getpos('.')
+	    let l:current = getpos('.')
+	    while index(l:positions, l:current) == -1
+		call add(l:positions, l:current)
+		call add(l:lengths, len(b:match_match))
+		silent! normal %
+		let l:current = getpos('.')
+	    endwhile
+	    call add(l:lengths, len(b:match_match))
+
+	    " b:match_match is for the original position before the jump, so
+	    " positions and (previous position's) lengths need to be combined with
+	    " an offset.
+	    let l:positionsAndLengths = []
+	    for l:i in range(len(l:positions))
+		call add(l:positionsAndLengths, l:positions[l:i] + [l:lengths[l:i + 1]])
+	    endfor
+"****D echomsg '**** Found' string(l:positionsAndLengths)
+	    if len(l:positionsAndLengths) >= 2
+		let l:sortedPositionsAndLengths = sort(l:positionsAndLengths, 's:ListComparePositions')
+
+		" Change the position of the start marker to point to its last
+		" character, not the first. The whitespace check needs this
+		" position.
+		let l:startPosition = l:positionsAndLengths[0][0:3]
+		let l:startPosition[2] += l:positionsAndLengths[0][4] - 1
+
+		let l:pairPositions = [l:startPosition, l:positionsAndLengths[-1][0:3]]
+	    endif
+	endif
+
+	" Disable matchit debugging.
+	unlet! b:match_debug
+	unlet! b:match_pat b:match_match b:match_col b:match_wholeBR b:match_iniBR b:match_ini b:match_tail b:match_word b:match_table
+"****D echomsg '****' string(l:pairPositions)
+	return l:pairPositions
+    endfunction
+else
+    function! s:GetPairPositions()
+	silent! normal! %
+	let l:posA = getpos('.')
+	silent! normal! %
+	let l:posB = getpos('.')
+
+	if l:posA == l:posB
+	    return [[], []]
+	elseif l:posA[1] > l:posB[1] || l:posA[1] == l:posB[1] && l:posA[2] > l:posB[2]
+	    " A is after B; swap positions.
+	    return [l:posB, l:posA]
+	else
+	    return [l:posA, l:posB]
+	endif
+    endfunction
+endif
 function! MatchTextObjects#RemoveWhitespaceInsideMatchingPair()
     let l:save_view = winsaveview()
 
@@ -295,7 +348,7 @@ function! MatchTextObjects#RemoveWhitespaceInsideMatchingPair()
 	endif
 
 	if l:didRemoval
-	    return
+	    return 1
 	endif
 
 	" No whitespace here, try again with enclosing matching pair, but only
@@ -309,6 +362,8 @@ function! MatchTextObjects#RemoveWhitespaceInsideMatchingPair()
     call winrestview(l:save_view)
     call s:ErrorMsg(l:errormsg)
     execute "normal! \<C-\>\<C-n>\<Esc>" | " Beep.
+
+    return 0
 endfunction
 
 " vim: set ts=8 sts=4 sw=4 noexpandtab ff=unix fdm=syntax :
