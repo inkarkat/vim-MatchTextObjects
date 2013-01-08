@@ -18,6 +18,11 @@
 "				Consistently beep on d%<Space> error.
 "				Return status to enable repeating via
 "				repeat.vim.
+"				Add matchit implementation of d%<Space>.
+"				FIX: Do not remove one inner match (e.g. "!"
+"				from b:match_words = "<:!:>" in "a!b!c") when
+"				the start / end matches are missing. Ensure that
+"				g% actually moves.
 "	003	07-Jan-2013	Split off functions into autoload script.
 "				Implement d%<Space> for non-matchit case.
 "	002	11-Feb-2009	Now setting v:warningmsg on warning.
@@ -148,15 +153,18 @@ if exists('g:loaded_matchit') && g:loaded_matchit
 	let l:matches = {}
 	let l:patterns = {}
 
-	silent! normal g%
 	let l:current = getpos('.')
-	while index(l:positions, l:current) == -1
-	    call add(l:positions, l:current)
-	    call s:Tally(l:matches, l:patterns)
-	    silent! normal %
+	silent! normal g%
+	if l:current != getpos('.')
 	    let l:current = getpos('.')
-	endwhile
-	call s:Tally(l:matches, l:patterns)
+	    while index(l:positions, l:current) == -1
+		call add(l:positions, l:current)
+		call s:Tally(l:matches, l:patterns)
+		silent! normal %
+		let l:current = getpos('.')
+	    endwhile
+	    call s:Tally(l:matches, l:patterns)
+	endif
 
 "****D echomsg '**** Found' string(l:positions)
 "****D echomsg '**** matches' string(keys(l:matches))
