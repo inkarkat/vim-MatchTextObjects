@@ -2,6 +2,7 @@
 "
 " DEPENDENCIES:
 "   - MatchTextObjects.vim autoload script
+"   - repeat.vim (vimscript #2136) autoload script (optional)
 "
 " Copyright: (C) 2008-2013 Ingo Karkat
 "   The VIM LICENSE applies to this script; see ':help copyright'.
@@ -10,6 +11,7 @@
 "
 " REVISION	DATE		REMARKS
 "	004	08-Jan-2013	Rename to MatchTextObjects.vim.
+"				Enable repeating via repeat.vim.
 "	003	07-Jan-2013	Split off functions into autoload script.
 "				Handle no-modifiable error and readonly warning.
 "	002	11-Feb-2009	Now setting v:warningmsg on warning.
@@ -21,9 +23,23 @@ if exists('g:loaded_MatchTextObjects') || (v:version < 700)
     finish
 endif
 let g:loaded_MatchTextObjects = 1
+let s:save_cpo = &cpo
+set cpo&vim
 
-nnoremap <silent> <Plug>(MatchTextObjectsRemovePair)       :<C-u>call setline('.', getline('.'))<Bar>call MatchTextObjects#RemoveMatchingPair()<CR>
-nnoremap <silent> <Plug>(MatchTextObjectsRemoveWhitespace) :<C-u>call setline('.', getline('.'))<Bar>call MatchTextObjects#RemoveWhitespaceInsideMatchingPair()<CR>
+" Note: Need to make the no-op modification only when necessary to keep the
+" original repeat.vim sequence enabled when this mapping errors out; otherwise,
+" b:changedtick is incremented, turning off repeat.vim.
+nnoremap <silent> <Plug>(MatchTextObjectsRemovePair)       :<C-u>
+\if !&ma<Bar><Bar>&ro<Bar>call setline('.', getline('.'))<Bar>endif<Bar>
+\if MatchTextObjects#RemoveMatchingPair()<Bar>
+\   silent! call repeat#set("\<lt>Plug>(MatchTextObjectsRemovePair)")<Bar>
+\endif<CR>
+nnoremap <silent> <Plug>(MatchTextObjectsRemoveWhitespace) :<C-u>
+\if !&ma<Bar><Bar>&ro<Bar>call setline('.', getline('.'))<Bar>endif<Bar>
+\if MatchTextObjects#RemoveWhitespaceInsideMatchingPair()<Bar>
+\   silent! call repeat#set("\<lt>Plug>(MatchTextObjectsRemoveWhitespace)")<Bar>
+\endif<CR>
+
 if ! hasmapto('<Plug>(MatchTextObjectsRemovePair)', 'n')
     nmap d%% <Plug>(MatchTextObjectsRemovePair)
 endif
@@ -31,4 +47,6 @@ if ! hasmapto('<Plug>(MatchTextObjectsRemoveWhitespace)', 'n')
     nmap d%<Space> <Plug>(MatchTextObjectsRemoveWhitespace)
 endif
 
+let &cpo = s:save_cpo
+unlet s:save_cpo
 " vim: set ts=8 sts=4 sw=4 noexpandtab ff=unix fdm=syntax :
