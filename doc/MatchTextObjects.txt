@@ -1,0 +1,104 @@
+*MatchTextObjects.txt*  Additional text objects for % matches.
+
+		     MATCH TEXT OBJECTS    by Ingo Karkat
+							*MatchTextObjects.vim*
+description			|MatchTextObjects-description|
+usage				|MatchTextObjects-usage|
+installation			|MatchTextObjects-installation|
+configuration			|MatchTextObjects-configuration|
+integration			|MatchTextObjects-integration|
+limitations			|MatchTextObjects-limitations|
+known problems			|MatchTextObjects-known-problems|
+todo				|MatchTextObjects-todo|
+history				|MatchTextObjects-history|
+
+==============================================================================
+DESCRIPTION					*MatchTextObjects-description*
+
+This script defines a |d%%| command which removes the matching pairs
+(determined via the |%| command and the 'matchpairs' option), but not the
+content in between. With support of the |matchit| plugin, more complex
+user-defined matches (like HTML tags or "if-else-endif") can also be deleted.
+For these complex matches, either only the match or the complete matching
+lines can be removed. The latter can be useful e.g. to remove C preprocessor
+#ifdef...#endif directives.
+
+HOW IT WORKS								     *
+
+SOURCE									     *
+(Original Vim tip, Stack Overflow answer, ...)
+
+SEE ALSO								     *
+(Plugins offering complementary functionality, or plugins using this library.)
+
+RELATED WORKS								     *
+(Alternatives from other authors, other approaches, references not used here.)
+
+==============================================================================
+USAGE						      *MatchTextObjects-usage*
+									 *d%%*
+d%%			Remove matching pair characters.
+			Complex |matchit| plugin matches can also be deleted.
+			The plugin asks whether only the match or the complete
+			matching lines should be removed. This is useful to
+			e.g. remove HTML tags or #ifdef..#endif directives.
+								   *d%<Space>*
+d%<Space>		Remove the whitespace inside the next matching pair
+			that contains whitespace. For example, turns
+			    foo( bar, baz(a, b), quux ) ~
+			into
+			    foo(bar, baz(a, b), quux) ~
+
+==============================================================================
+INSTALLATION				       *MatchTextObjects-installation*
+
+This script is packaged as a |vimball|. If you have the "gunzip" decompressor
+in your PATH, simply edit the *.vmb.gz package in Vim; otherwise, decompress
+the archive first, e.g. using WinZip. Inside Vim, install by sourcing the
+vimball or via the |:UseVimball| command. >
+    vim MatchTextObjects*.vmb.gz
+    :so %
+To uninstall, use the |:RmVimball| command.
+
+DEPENDENCIES				       *MatchTextObjects-dependencies*
+
+- Requires Vim 7.0 or higher.
+
+==============================================================================
+CONFIGURATION				      *MatchTextObjects-configuration*
+
+For a permanent configuration, put the following commands into your |vimrc|:
+configvar
+						      *MatchTextObjects-remap*
+plugmap
+
+==============================================================================
+INTEGRATION					*MatchTextObjects-integration*
+
+==============================================================================
+LIMITATIONS					*MatchTextObjects-limitations*
+
+KNOWN PROBLEMS				     *MatchTextObjects-known-problems*
+
+TODO						       *MatchTextObjects-todo*
+
+- d%<Space>: Also remove newlines after / before matches.
+
+IDEAS						      *MatchTextObjects-ideas*
+
+==============================================================================
+HISTORY						    *MatchTextObjects-history*
+
+GOAL
+First published version.
+
+0.01	28-Jul-2008
+Started development.
+
+==============================================================================
+Copyright: (C) 2008-2013 Ingo Karkat
+The VIM LICENSE applies to this script; see |copyright|.
+
+Maintainer:	Ingo Karkat <ingo@karkat.de>
+==============================================================================
+ vim:tw=78:ts=8:ft=help:norl:
