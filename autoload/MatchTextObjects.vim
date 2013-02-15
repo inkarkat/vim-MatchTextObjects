@@ -1,6 +1,7 @@
 " MatchTextObjects.vim: Additional text objects for % matches.
 "
 " DEPENDENCIES:
+"   - ingocursormove.vim autoload script
 "
 " Copyright: (C) 2008-2013 Ingo Karkat
 "   The VIM LICENSE applies to this script; see ':help copyright'.
@@ -8,6 +9,14 @@
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 "
 " REVISION	DATE		REMARKS
+"	005	09-Jan-2013	Factor start match end position correction out
+"				of s:GetPairPositions() and rename to
+"				s:GetPairPositionsAndLengths() to allow reuse
+"				for ,% omap.
+"				Add omap ,% via
+"				MatchTextObjects#RemoveEndEditStartMotion().
+"				Add vmap ,% via
+"				MatchTextObjects#RemoveEndEditStartVisual().
 "	004	08-Jan-2013	Rename to MatchTextObjects.vim.
 "				Change warning messages into either :echo or
 "				error message.
@@ -36,7 +45,6 @@ function! s:ErrorMsg( text )
     echohl None
 endfunction
 
-" Remove the matching pairs as identified by the '%' command.
 if exists('g:loaded_matchit') && g:loaded_matchit
     function! s:MatchNum( expr, pattern )
 	let l:matchCnt = 0
@@ -261,8 +269,8 @@ endif
 
 
 if exists('g:loaded_matchit') && g:loaded_matchit
-    function! s:GetPairPositions()
-	let l:pairPositions = [[], []]
+    function! s:GetPairPositionsAndLengths()
+	let l:pairPositionsAndLengths = [[], 0, [], 0]
 
 	" Enable matchit debugging to get hold of the internal data.
 	let b:match_debug = 1
@@ -292,37 +300,33 @@ if exists('g:loaded_matchit') && g:loaded_matchit
 "****D echomsg '**** Found' string(l:positionsAndLengths)
 	    if len(l:positionsAndLengths) >= 2
 		let l:sortedPositionsAndLengths = sort(l:positionsAndLengths, 's:ListComparePositions')
-
-		" Change the position of the start marker to point to its last
-		" character, not the first. The whitespace check needs this
-		" position.
-		let l:startPosition = l:positionsAndLengths[0][0:3]
-		let l:startPosition[2] += l:positionsAndLengths[0][4] - 1
-
-		let l:pairPositions = [l:startPosition, l:positionsAndLengths[-1][0:3]]
+		let l:pairPositionsAndLengths = [l:positionsAndLengths[0][0:3], l:positionsAndLengths[0][4], l:positionsAndLengths[-1][0:3], l:positionsAndLengths[-1][4]]
 	    endif
 	endif
 
 	" Disable matchit debugging.
 	unlet! b:match_debug
 	unlet! b:match_pat b:match_match b:match_col b:match_wholeBR b:match_iniBR b:match_ini b:match_tail b:match_word b:match_table
-"****D echomsg '****' string(l:pairPositions)
-	return l:pairPositions
+"****D echomsg '****' string(l:pairPositionsAndLengths)
+	return l:pairPositionsAndLengths
     endfunction
 else
-    function! s:GetPairPositions()
+    function! s:GetCharacterLength( position )
+	return len(matchstr(getline(a:position[1]), printf('\%%%dc.', a:position[2])))
+    endfunction
+    function! s:GetPairPositionsAndLengths()
 	silent! normal! %
 	let l:posA = getpos('.')
 	silent! normal! %
 	let l:posB = getpos('.')
 
 	if l:posA == l:posB
-	    return [[], []]
+	    return [[], 0, [], 0]
 	elseif l:posA[1] > l:posB[1] || l:posA[1] == l:posB[1] && l:posA[2] > l:posB[2]
 	    " A is after B; swap positions.
-	    return [l:posB, l:posA]
+	    return [l:posB, s:GetCharacterLength(l:posB), l:posA, s:GetCharacterLength(l:posA)]
 	else
-	    return [l:posA, l:posB]
+	    return [l:posA, s:GetCharacterLength(l:posA), l:posB, s:GetCharacterLength(l:posB)]
 	endif
     endfunction
 endif
@@ -331,7 +335,7 @@ function! MatchTextObjects#RemoveWhitespaceInsideMatchingPair()
 
     let l:errormsg = 'No matching pairs found'
     while 1
-	let [l:startMatch, l:endMatch] = s:GetPairPositions()
+	let [l:startMatch, l:startLength, l:endMatch, l:endLength] = s:GetPairPositionsAndLengths()
 	if empty(l:startMatch)
 	    break
 	else
@@ -347,8 +351,13 @@ function! MatchTextObjects#RemoveWhitespaceInsideMatchingPair()
 	    let l:didRemoval = 1
 	endif
 
-	let l:whitespaceCol = match(getline(l:startMatch[1]), '^\S\zs\s\+', l:startMatch[2] - 1)
-"****D echomsg '***s' string(l:startMatch) l:whitespaceCol
+
+	" Use last character position of the start marker, not the first, as
+	" this checks for whitespace immediately after the start marker.
+	let l:startMatchEndPosition = l:startMatch[2] + l:startLength - 1
+
+	let l:whitespaceCol = match(getline(l:startMatch[1]), '^\S\zs\s\+', l:startMatchEndPosition - 1)
+"****D echomsg '***s' string(l:startMatch) string(l:startLength) l:whitespaceCol
 	if l:whitespaceCol != -1
 	    call cursor(l:startMatch[1], l:whitespaceCol + 1)
 	    normal! "_diw
@@ -372,6 +381,53 @@ function! MatchTextObjects#RemoveWhitespaceInsideMatchingPair()
     execute "normal! \<C-\>\<C-n>\<Esc>" | " Beep.
 
     return 0
+endfunction
+
+
+function! MatchTextObjects#RemoveEndEditStartMotion( ... )
+    let l:save_cursor = getpos('.')
+    let l:save_view = winsaveview()
+
+    let [l:startMatch, l:startLength, l:endMatch, l:endLength] = s:GetPairPositionsAndLengths()
+    if empty(l:startMatch)
+	call winrestview(l:save_view)
+	call s:ErrorMsg('No matching pairs found')
+	execute "normal! \<C-\>\<C-n>\<Esc>" | " Beep.
+
+	return 0
+    elseif l:startMatch[1] < l:save_cursor[1] || l:startMatch[1] == l:save_cursor[1] && l:startMatch[2] < l:save_cursor[2]
+	call winrestview(l:save_view)
+	call s:ErrorMsg('Cursor not before, but inside matching pairs')
+	execute "normal! \<C-\>\<C-n>\<Esc>" | " Beep.
+
+	return 0
+    endif
+
+    " Remove the end match.
+    let l:line = getline(l:endMatch[1])
+    call setline(l:endMatch[1], strpart(l:line, 0, l:endMatch[2] - 1) . strpart(l:line, l:endMatch[2] + l:endLength - 1))
+
+    call winrestview(l:save_view)
+
+    " Move the cursor to the end of the start match, then one after it, so that
+    " the operator works on the text from the original position to the end of
+    " the start match.
+    let l:startMatchEndPosition = l:startMatch
+    let l:startMatchEndPosition[2] += l:startLength - 1
+    call setpos('.', l:startMatchEndPosition)
+    if ! a:0 || ! a:1
+	call ingocursormove#Right()
+    endif
+
+    return 1
+endfunction
+function! MatchTextObjects#RemoveEndEditStartVisual()
+    let l:save_cursor = getpos('.')
+    if MatchTextObjects#RemoveEndEditStartMotion(&selection !=# 'exclusive')
+	call setpos("'<", l:save_cursor)
+	call setpos("'>", getpos('.'))
+	normal! gv
+    endif
 endfunction
 
 " vim: set ts=8 sts=4 sw=4 noexpandtab ff=unix fdm=syntax :
