@@ -44,10 +44,23 @@ d%%			Remove matching pair characters.
 			e.g. remove HTML tags or #ifdef..#endif directives.
 								   *d%<Space>*
 d%<Space>		Remove the whitespace inside the next matching pair
-			that contains whitespace. For example, turns
+			that contains whitespace.
+			For example, turns
 			    foo( bar, baz(a, b), quux ) ~
 			into
 			    foo(bar, baz(a, b), quux) ~
+									  *,%*
+,%			Motion that jumps to the end match, deletes it, then
+			operates on the text from the original position to the
+			(and including the) start match.
+			For example, turns
+			    |foo(bar, baz(a, b), quux) ~
+			into
+			    |bar, baz(a, b), quux ~
+									*v_,%*
+{Visual},%		Delete the end match, then select the text from the
+			original position to the (and including the) start
+			match.
 
 ==============================================================================
 INSTALLATION				       *MatchTextObjects-installation*
