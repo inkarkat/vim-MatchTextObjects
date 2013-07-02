@@ -9,6 +9,9 @@
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 "
 " REVISION	DATE		REMARKS
+"	006	16-Feb-2013	Make s:GetPairPositionsAndLengths() public for
+"				re-use by other plugins.
+"				Rename variables to make their contents clearer.
 "	005	09-Jan-2013	Factor start match end position correction out
 "				of s:GetPairPositions() and rename to
 "				s:GetPairPositionsAndLengths() to allow reuse
@@ -269,7 +272,7 @@ endif
 
 
 if exists('g:loaded_matchit') && g:loaded_matchit
-    function! s:GetPairPositionsAndLengths()
+    function! MatchTextObjects#GetPairPositionsAndLengths()
 	let l:pairPositionsAndLengths = [[], 0, [], 0]
 
 	" Enable matchit debugging to get hold of the internal data.
@@ -314,7 +317,7 @@ else
     function! s:GetCharacterLength( position )
 	return len(matchstr(getline(a:position[1]), printf('\%%%dc.', a:position[2])))
     endfunction
-    function! s:GetPairPositionsAndLengths()
+    function! MatchTextObjects#GetPairPositionsAndLengths()
 	silent! normal! %
 	let l:posA = getpos('.')
 	silent! normal! %
@@ -335,18 +338,18 @@ function! MatchTextObjects#RemoveWhitespaceInsideMatchingPair()
 
     let l:errormsg = 'No matching pairs found'
     while 1
-	let [l:startMatch, l:startLength, l:endMatch, l:endLength] = s:GetPairPositionsAndLengths()
-	if empty(l:startMatch)
+	let [l:startMatchPos, l:startLength, l:endMatchPos, l:endLength] = MatchTextObjects#GetPairPositionsAndLengths()
+	if empty(l:startMatchPos)
 	    break
 	else
 	    let l:errormsg = 'No matching pairs with inner whitespace found'
 	endif
 
 	let l:didRemoval = 0
-	let l:whitespaceCol = match(strpart(getline(l:endMatch[1]), 0, l:endMatch[2] - 1), '\s\+$')
-"****D echomsg '***e' string(l:endMatch) l:whitespaceCol
+	let l:whitespaceCol = match(strpart(getline(l:endMatchPos[1]), 0, l:endMatchPos[2] - 1), '\s\+$')
+"****D echomsg '***e' string(l:endMatchPos) l:whitespaceCol
 	if l:whitespaceCol != -1
-	    call cursor(l:endMatch[1], l:whitespaceCol + 1)
+	    call cursor(l:endMatchPos[1], l:whitespaceCol + 1)
 	    normal! "_diw
 	    let l:didRemoval = 1
 	endif
@@ -354,12 +357,12 @@ function! MatchTextObjects#RemoveWhitespaceInsideMatchingPair()
 
 	" Use last character position of the start marker, not the first, as
 	" this checks for whitespace immediately after the start marker.
-	let l:startMatchEndPosition = l:startMatch[2] + l:startLength - 1
+	let l:startMatchEndPos = l:startMatchPos[2] + l:startLength - 1
 
-	let l:whitespaceCol = match(getline(l:startMatch[1]), '^\S\zs\s\+', l:startMatchEndPosition - 1)
-"****D echomsg '***s' string(l:startMatch) string(l:startLength) l:whitespaceCol
+	let l:whitespaceCol = match(getline(l:startMatchPos[1]), '^\S\zs\s\+', l:startMatchEndPos - 1)
+"****D echomsg '***s' string(l:startMatchPos) string(l:startLength) l:whitespaceCol
 	if l:whitespaceCol != -1
-	    call cursor(l:startMatch[1], l:whitespaceCol + 1)
+	    call cursor(l:startMatchPos[1], l:whitespaceCol + 1)
 	    normal! "_diw
 	    let l:didRemoval = 1
 	endif
@@ -370,7 +373,7 @@ function! MatchTextObjects#RemoveWhitespaceInsideMatchingPair()
 
 	" No whitespace here, try again with enclosing matching pair, but only
 	" in the current line, as % only searches there, too.
-	call setpos('.', l:endMatch)
+	call setpos('.', l:endMatchPos)
 	if search('.', 'W', line('.')) == 0
 	    break
 	endif
@@ -388,14 +391,14 @@ function! MatchTextObjects#RemoveEndEditStartMotion( ... )
     let l:save_cursor = getpos('.')
     let l:save_view = winsaveview()
 
-    let [l:startMatch, l:startLength, l:endMatch, l:endLength] = s:GetPairPositionsAndLengths()
-    if empty(l:startMatch)
+    let [l:startMatchPos, l:startLength, l:endMatchPos, l:endLength] = MatchTextObjects#GetPairPositionsAndLengths()
+    if empty(l:startMatchPos)
 	call winrestview(l:save_view)
 	call s:ErrorMsg('No matching pairs found')
 	execute "normal! \<C-\>\<C-n>\<Esc>" | " Beep.
 
 	return 0
-    elseif l:startMatch[1] < l:save_cursor[1] || l:startMatch[1] == l:save_cursor[1] && l:startMatch[2] < l:save_cursor[2]
+    elseif l:startMatchPos[1] < l:save_cursor[1] || l:startMatchPos[1] == l:save_cursor[1] && l:startMatchPos[2] < l:save_cursor[2]
 	call winrestview(l:save_view)
 	call s:ErrorMsg('Cursor not before, but inside matching pairs')
 	execute "normal! \<C-\>\<C-n>\<Esc>" | " Beep.
@@ -404,17 +407,17 @@ function! MatchTextObjects#RemoveEndEditStartMotion( ... )
     endif
 
     " Remove the end match.
-    let l:line = getline(l:endMatch[1])
-    call setline(l:endMatch[1], strpart(l:line, 0, l:endMatch[2] - 1) . strpart(l:line, l:endMatch[2] + l:endLength - 1))
+    let l:line = getline(l:endMatchPos[1])
+    call setline(l:endMatchPos[1], strpart(l:line, 0, l:endMatchPos[2] - 1) . strpart(l:line, l:endMatchPos[2] + l:endLength - 1))
 
     call winrestview(l:save_view)
 
     " Move the cursor to the end of the start match, then one after it, so that
     " the operator works on the text from the original position to the end of
     " the start match.
-    let l:startMatchEndPosition = l:startMatch
-    let l:startMatchEndPosition[2] += l:startLength - 1
-    call setpos('.', l:startMatchEndPosition)
+    let l:startMatchEndPos = l:startMatchPos
+    let l:startMatchEndPos[2] += l:startLength - 1
+    call setpos('.', l:startMatchEndPos)
     if ! a:0 || ! a:1
 	call ingocursormove#Right()
     endif
