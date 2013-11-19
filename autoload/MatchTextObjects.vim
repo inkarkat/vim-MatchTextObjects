@@ -1,7 +1,7 @@
 " MatchTextObjects.vim: Additional text objects for % matches.
 "
 " DEPENDENCIES:
-"   - ingocursormove.vim autoload script
+"   - ingo/cursor/move.vim autoload script
 "
 " Copyright: (C) 2008-2013 Ingo Karkat
 "   The VIM LICENSE applies to this script; see ':help copyright'.
@@ -9,6 +9,7 @@
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 "
 " REVISION	DATE		REMARKS
+"	007	03-Jul-2013	Move ingocursormove.vim into ingo-library.
 "	006	16-Feb-2013	Make s:GetPairPositionsAndLengths() public for
 "				re-use by other plugins.
 "				Rename variables to make their contents clearer.
@@ -419,7 +420,7 @@ function! MatchTextObjects#RemoveEndEditStartMotion( ... )
     let l:startMatchEndPos[2] += l:startLength - 1
     call setpos('.', l:startMatchEndPos)
     if ! a:0 || ! a:1
-	call ingocursormove#Right()
+	call ingo#cursor#move#Right()
     endif
 
     return 1
