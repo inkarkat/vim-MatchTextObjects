@@ -10,6 +10,7 @@
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 "
 " REVISION	DATE		REMARKS
+"	005	09-Jan-2013	Add omap ,% and vmap ,%.
 "	004	08-Jan-2013	Rename to MatchTextObjects.vim.
 "				Enable repeating via repeat.vim.
 "	003	07-Jan-2013	Split off functions into autoload script.
@@ -45,6 +46,15 @@ if ! hasmapto('<Plug>(MatchTextObjectsRemovePair)', 'n')
 endif
 if ! hasmapto('<Plug>(MatchTextObjectsRemoveWhitespace)', 'n')
     nmap d%<Space> <Plug>(MatchTextObjectsRemoveWhitespace)
+endif
+
+onoremap <silent> <Plug>(MatchTextObjectsRemoveEndEditStartMotion) :<C-u>call MatchTextObjects#RemoveEndEditStartMotion()<CR>
+vnoremap <silent> <Plug>(MatchTextObjectsRemoveEndEditStartMotion) :<C-u>call MatchTextObjects#RemoveEndEditStartVisual()<CR>
+if ! hasmapto('<Plug>(MatchTextObjectsRemoveEndEditStartMotion)', 'o')
+    omap ,% <Plug>(MatchTextObjectsRemoveEndEditStartMotion)
+endif
+if ! hasmapto('<Plug>(MatchTextObjectsRemoveEndEditStartMotion)', 'x')
+    xmap ,% <Plug>(MatchTextObjectsRemoveEndEditStartMotion)
 endif
 
 let &cpo = s:save_cpo
