@@ -9,6 +9,8 @@
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 "
 " REVISION	DATE		REMARKS
+"	008	20-Nov-2013	Need to use ingo#compat#setpos() to make a
+"				selection in Vim versions before 7.3.590.
 "	007	03-Jul-2013	Move ingocursormove.vim into ingo-library.
 "	006	16-Feb-2013	Make s:GetPairPositionsAndLengths() public for
 "				re-use by other plugins.
@@ -428,8 +430,8 @@ endfunction
 function! MatchTextObjects#RemoveEndEditStartVisual()
     let l:save_cursor = getpos('.')
     if MatchTextObjects#RemoveEndEditStartMotion(&selection !=# 'exclusive')
-	call setpos("'<", l:save_cursor)
-	call setpos("'>", getpos('.'))
+	call ingo#compat#setpos("'<", l:save_cursor)
+	call ingo#compat#setpos("'>", getpos('.'))
 	normal! gv
     endif
 endfunction
