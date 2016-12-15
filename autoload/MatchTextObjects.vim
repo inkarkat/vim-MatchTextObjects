@@ -2,13 +2,15 @@
 "
 " DEPENDENCIES:
 "   - ingo/cursor/move.vim autoload script
+"   - ingo/err.vim autoload script
 "
-" Copyright: (C) 2008-2013 Ingo Karkat
+" Copyright: (C) 2008-2014 Ingo Karkat
 "   The VIM LICENSE applies to this script; see ':help copyright'.
 "
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 "
 " REVISION	DATE		REMARKS
+"	009	05-May-2014	Abort on error.
 "	008	20-Nov-2013	Need to use ingo#compat#setpos() to make a
 "				selection in Vim versions before 7.3.590.
 "	007	03-Jul-2013	Move ingocursormove.vim into ingo-library.
@@ -44,11 +46,9 @@
 "	001	27-Jul-2008	Split off from textobjects.vim
 "				file creation
 
-function! s:ErrorMsg( text )
-    let v:errmsg = a:text
-    echohl ErrorMsg
-    echomsg v:errmsg
-    echohl None
+function! s:SetErrorAndBeep( text )
+    call ingo#err#Set(a:text)
+    execute "normal! \<C-\>\<C-n>\<Esc>" | " Beep.
 endfunction
 
 if exists('g:loaded_matchit') && g:loaded_matchit
@@ -218,8 +218,7 @@ if exists('g:loaded_matchit') && g:loaded_matchit
 	endif
 
 	if empty(l:action)
-	    call s:ErrorMsg('No matching pairs found')
-	    execute "normal! \<C-\>\<C-n>\<Esc>" | " Beep.
+	    call s:SetErrorAndBeep('No matching pairs found')
 	elseif l:action ==# 'c'
 	    echo 'Canceled deletion of matchpairs'
 	elseif l:action ==# 'm'
@@ -251,8 +250,7 @@ else
 	let l:posB = getpos('.')
 
 	if l:posA == l:posB
-	    call s:ErrorMsg('No matching pairs found')
-	    execute "normal! \<C-\>\<C-n>\<Esc>" | " Beep.
+	    call s:SetErrorAndBeep('No matching pairs found')
 	    return 0
 	endif
 	if l:posA[1] == l:posB[1] && l:posA[2] > l:posB[2]
@@ -383,9 +381,7 @@ function! MatchTextObjects#RemoveWhitespaceInsideMatchingPair()
     endwhile
 
     call winrestview(l:save_view)
-    call s:ErrorMsg(l:errormsg)
-    execute "normal! \<C-\>\<C-n>\<Esc>" | " Beep.
-
+    call s:SetErrorAndBeep(l:errormsg)
     return 0
 endfunction
 
@@ -397,15 +393,11 @@ function! MatchTextObjects#RemoveEndEditStartMotion( ... )
     let [l:startMatchPos, l:startLength, l:endMatchPos, l:endLength] = MatchTextObjects#GetPairPositionsAndLengths()
     if empty(l:startMatchPos)
 	call winrestview(l:save_view)
-	call s:ErrorMsg('No matching pairs found')
-	execute "normal! \<C-\>\<C-n>\<Esc>" | " Beep.
-
+	call s:SetErrorAndBeep('No matching pairs found')
 	return 0
     elseif l:startMatchPos[1] < l:save_cursor[1] || l:startMatchPos[1] == l:save_cursor[1] && l:startMatchPos[2] < l:save_cursor[2]
 	call winrestview(l:save_view)
-	call s:ErrorMsg('Cursor not before, but inside matching pairs')
-	execute "normal! \<C-\>\<C-n>\<Esc>" | " Beep.
-
+	call s:SetErrorAndBeep('Cursor not before, but inside matching pairs')
 	return 0
     endif
 
