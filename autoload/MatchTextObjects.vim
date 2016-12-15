@@ -1,8 +1,10 @@
 " MatchTextObjects.vim: Additional text objects for % matches.
 "
 " DEPENDENCIES:
+"   - ingo/compat.vim autoload script
 "   - ingo/cursor/move.vim autoload script
 "   - ingo/err.vim autoload script
+"   - ingo/pos.vim autoload script
 "
 " Copyright: (C) 2008-2016 Ingo Karkat
 "   The VIM LICENSE applies to this script; see ':help copyright'.
@@ -10,6 +12,20 @@
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 "
 " REVISION	DATE		REMARKS
+"	010	16-Dec-2016	ENH: Add a:what argument to
+"				MatchTextObjects#RemoveMatchingPair(). Support
+"				"i"nner, "o"uter, and "a"ll whitespace removal;
+"				drop the special rule for C-style comments in
+"				its stead.
+"				Use ingo#compat#getcurpos() for saving the
+"				cursor position.
+"				Move s:ListComparePositions(),
+"				s:ProcessPatternForReplacement(),
+"				s:DeleteMatches() out of the :if
+"				g:loaded_matchit conditional, and use them also
+"				for the new types in the case of
+"				single-character matches.
+"				Use ingo/pos.vim functions.
 "	009	05-May-2014	Abort on error.
 "	008	20-Nov-2013	Need to use ingo#compat#setpos() to make a
 "				selection in Vim versions before 7.3.590.
@@ -174,7 +190,7 @@ if exists('g:loaded_matchit') && g:loaded_matchit
 	echo len(l:lines) 'fewer lines'
     endfunction
     function! MatchTextObjects#RemoveMatchingPair( what )
-	let l:save_cursor = getpos('.')
+	let l:save_cursor = ingo#compat#getcurpos()
 
 	" Enable matchit debugging to get hold of the internal data.
 	let b:match_debug = 1
@@ -252,7 +268,7 @@ else
     " Note: The pairs are limited to the single characters of the 'matchpairs'
     " option, no C-style comments or preprocessor conditionals!
     function! s:DeleteSingleCharacterMatches( positions )
-	if a:positions[0][1] == a:positions[1][1] && a:positions[0][2] > a:positions[1][2]
+	if ingo#pos#SameLineIsAfter(a:positions[0][1:2], a:positions[1][1:2])
 	    " Position A is in the same line behind position B. Because of the same
 	    " line, we need to delete from end to start (as removal of start would
 	    " invalidate end position), so go back to A.
@@ -265,7 +281,7 @@ else
 	normal! x
     endfunction
     function! MatchTextObjects#RemoveMatchingPair( what )
-	let l:save_cursor = getpos('.')
+	let l:save_cursor = ingo#compat#getcurpos()
 
 	silent! normal! %
 	let l:positions = [getpos('.')]
@@ -344,7 +360,7 @@ else
 
 	if l:posA == l:posB
 	    return [[], 0, [], 0]
-	elseif l:posA[1] > l:posB[1] || l:posA[1] == l:posB[1] && l:posA[2] > l:posB[2]
+	elseif ingo#pos#IsAfter(l:posA[1:2], l:posB[1:2])
 	    " A is after B; swap positions.
 	    return [l:posB, s:GetCharacterLength(l:posB), l:posA, s:GetCharacterLength(l:posA)]
 	else
@@ -406,7 +422,7 @@ endfunction
 
 
 function! MatchTextObjects#RemoveEndEditStartMotion( ... )
-    let l:save_cursor = getpos('.')
+    let l:save_cursor = ingo#compat#getcurpos()
     let l:save_view = winsaveview()
 
     let [l:startMatchPos, l:startLength, l:endMatchPos, l:endLength] = MatchTextObjects#GetPairPositionsAndLengths()
@@ -439,10 +455,10 @@ function! MatchTextObjects#RemoveEndEditStartMotion( ... )
     return 1
 endfunction
 function! MatchTextObjects#RemoveEndEditStartVisual()
-    let l:save_cursor = getpos('.')
+    let l:save_cursor = ingo#compat#getcurpos()
     if MatchTextObjects#RemoveEndEditStartMotion(&selection !=# 'exclusive')
 	call ingo#compat#setpos("'<", l:save_cursor)
-	call ingo#compat#setpos("'>", getpos('.'))
+	call ingo#compat#setpos("'>", ingo#compat#getcurpos())
 	normal! gv
     endif
 endfunction
