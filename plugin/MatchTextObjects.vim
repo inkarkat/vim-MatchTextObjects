@@ -2,14 +2,16 @@
 "
 " DEPENDENCIES:
 "   - MatchTextObjects.vim autoload script
+"   - ingo/err.vim autoload script
 "   - repeat.vim (vimscript #2136) autoload script (optional)
 "
-" Copyright: (C) 2008-2013 Ingo Karkat
+" Copyright: (C) 2008-2014 Ingo Karkat
 "   The VIM LICENSE applies to this script; see ':help copyright'.
 "
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 "
 " REVISION	DATE		REMARKS
+"	006	05-May-2014	Abort on error.
 "	005	09-Jan-2013	Add omap ,% and vmap ,%.
 "	004	08-Jan-2013	Rename to MatchTextObjects.vim.
 "				Enable repeating via repeat.vim.
@@ -34,11 +36,15 @@ nnoremap <silent> <Plug>(MatchTextObjectsRemovePair)       :<C-u>
 \if !&ma<Bar><Bar>&ro<Bar>call setline('.', getline('.'))<Bar>endif<Bar>
 \if MatchTextObjects#RemoveMatchingPair()<Bar>
 \   silent! call repeat#set("\<lt>Plug>(MatchTextObjectsRemovePair)")<Bar>
+\else<Bar>
+\   echoerr ingo#err#Get()<Bar>
 \endif<CR>
 nnoremap <silent> <Plug>(MatchTextObjectsRemoveWhitespace) :<C-u>
 \if !&ma<Bar><Bar>&ro<Bar>call setline('.', getline('.'))<Bar>endif<Bar>
 \if MatchTextObjects#RemoveWhitespaceInsideMatchingPair()<Bar>
 \   silent! call repeat#set("\<lt>Plug>(MatchTextObjectsRemoveWhitespace)")<Bar>
+\else<Bar>
+\   echoerr ingo#err#Get()<Bar>
 \endif<CR>
 
 if ! hasmapto('<Plug>(MatchTextObjectsRemovePair)', 'n')
@@ -48,8 +54,8 @@ if ! hasmapto('<Plug>(MatchTextObjectsRemoveWhitespace)', 'n')
     nmap d%<Space> <Plug>(MatchTextObjectsRemoveWhitespace)
 endif
 
-onoremap <silent> <Plug>(MatchTextObjectsRemoveEndEditStartMotion) :<C-u>call MatchTextObjects#RemoveEndEditStartMotion()<CR>
-vnoremap <silent> <Plug>(MatchTextObjectsRemoveEndEditStartMotion) :<C-u>call MatchTextObjects#RemoveEndEditStartVisual()<CR>
+onoremap <silent> <Plug>(MatchTextObjectsRemoveEndEditStartMotion) :<C-u>if ! MatchTextObjects#RemoveEndEditStartMotion()<Bar>echoerr ingo#err#Get()<Bar>endif<CR>
+vnoremap <silent> <Plug>(MatchTextObjectsRemoveEndEditStartMotion) :<C-u>if ! MatchTextObjects#RemoveEndEditStartVisual()<Bar>echoerr ingo#err#Get()<Bar>endif<CR>
 if ! hasmapto('<Plug>(MatchTextObjectsRemoveEndEditStartMotion)', 'o')
     omap ,% <Plug>(MatchTextObjectsRemoveEndEditStartMotion)
 endif
