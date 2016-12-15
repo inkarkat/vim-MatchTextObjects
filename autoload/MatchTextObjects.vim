@@ -4,7 +4,7 @@
 "   - ingo/cursor/move.vim autoload script
 "   - ingo/err.vim autoload script
 "
-" Copyright: (C) 2008-2014 Ingo Karkat
+" Copyright: (C) 2008-2016 Ingo Karkat
 "   The VIM LICENSE applies to this script; see ':help copyright'.
 "
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
@@ -49,6 +49,62 @@
 function! s:SetErrorAndBeep( text )
     call ingo#err#Set(a:text)
     execute "normal! \<C-\>\<C-n>\<Esc>" | " Beep.
+endfunction
+
+function! s:ListComparePositions( i1, i2 )
+    if a:i1[1] == a:i2[1]
+	" Same line, compare columns.
+	return a:i1[2] == a:i2[2] ? 0 : a:i1[2] > a:i2[2] ? 1 : -1
+    else
+	return a:i1[1] > a:i2[1] ? 1 : -1
+    endif
+endfunction
+function! s:ProcessPatternForReplacement( pattern )
+    " If the pattern does not start at the beginning, but somewhere in the
+    " middle, the stored cursor position will be there, not at the beginning.
+    " The 'html' filetype uses this to start the match at the tag name, not
+    " the <.
+    if a:pattern =~# '\\@<=' || a:pattern =~# '\\zs'
+	return substitute(a:pattern, '\\@<=', '\\%#', '')
+    endif
+
+    " If the pattern already contains a cursor position match, do nothing.
+    if a:pattern =~# '\\%#'
+	return a:pattern
+    endif
+
+    " The cursor must be at the beginning of the match, as we're restoring
+    " the match position before deleting the match.
+    return '\%#' . a:pattern
+endfunction
+function! s:DeleteMatches( positions, patterns, what )
+    let l:sortedPositions = sort(a:positions, 's:ListComparePositions')
+"****D echomsg '**** sortPos' string(l:sortedPositions)
+    let l:allPatterns = join(map(keys(a:patterns), 's:ProcessPatternForReplacement(v:val)'), '\|')
+"****D echomsg '**** allPat' l:allPatterns
+
+    let l:isLast = 1
+    for l:idx in range(len(l:sortedPositions) - 1, 0, -1)
+	let l:isFirst = (l:idx == 0)
+	let l:pos = l:sortedPositions[l:idx]
+
+	call setpos('.', l:pos)
+
+	let l:search = l:allPatterns
+	if a:what ==# 'i' && l:isLast || a:what ==# 'o' && l:isFirst
+	    let l:search = '\s*\%(' . l:search . '\)'
+	elseif a:what ==# 'i' && l:isFirst || a:what ==# 'o' && l:isLast
+	    let l:search = '\%(' . l:search . '\)\s*'
+	elseif a:what ==# 'i' || a:what ==# 'a'
+	    let l:search = '\s*\%(' . l:search . '\)\s*'
+	endif
+
+	execute printf('substitute/%s//e', escape(l:search, '/'))
+
+	let l:isLast = 0
+    endfor
+
+    call histdel('search', -1)
 endfunction
 
 if exists('g:loaded_matchit') && g:loaded_matchit
@@ -101,14 +157,6 @@ if exists('g:loaded_matchit') && g:loaded_matchit
 	let l:n2 = 0 + a:i2
 	return l:n1 == l:n2 ? 0 : l:n1 > l:n2 ? 1 : -1
     endfunction
-    function! s:ListComparePositions( i1, i2 )
-	if a:i1[1] == a:i2[1]
-	    " Same line, compare columns.
-	    return a:i1[2] == a:i2[2] ? 0 : a:i1[2] > a:i2[2] ? 1 : -1
-	else
-	    return a:i1[1] > a:i2[1] ? 1 : -1
-	endif
-    endfunction
     function! s:GetUniqueLines( positions )
 	let l:lines = {}
 	for l:pos in a:positions
@@ -125,39 +173,7 @@ if exists('g:loaded_matchit') && g:loaded_matchit
 	endfor
 	echo len(l:lines) 'fewer lines'
     endfunction
-    function! s:ProcessPatternForReplacement( pattern )
-	" If the pattern does not start at the beginning, but somewhere in the
-	" middle, the stored cursor position will be there, not at the beginning.
-	" The 'html' filetype uses this to start the match at the tag name, not
-	" the <.
-	if a:pattern =~# '\\@<=' || a:pattern =~# '\\zs'
-	    return substitute(a:pattern, '\\@<=', '\\%#', '')
-	endif
-
-	" If the pattern already contains a cursor position match, do nothing.
-	if a:pattern =~# '\\%#'
-	    return a:pattern
-	endif
-
-	" The cursor must be at the beginning of the match, as we're restoring
-	" the match position before deleting the match.
-	return '\%#' . a:pattern
-    endfunction
-    function! s:DeleteMatches( positions, patterns )
-	let l:sortedPositions = sort(a:positions, 's:ListComparePositions')
-"****D echomsg '**** sortPos' string(l:sortedPositions)
-	let l:allPatterns = join(map(keys(a:patterns), 's:ProcessPatternForReplacement(v:val)'), '\|')
-"****D echomsg '**** allPat' l:allPatterns
-
-	for l:pos in reverse(l:sortedPositions)
-	    call setpos('.', l:pos)
-	    " TODO: Check for collisions with + separator.
-	    execute 'substitute+' . l:allPatterns . '++e'
-	endfor
-	call histdel('search', -1)
-    endfunction
-
-    function! MatchTextObjects#RemoveMatchingPair()
+    function! MatchTextObjects#RemoveMatchingPair( what )
 	let l:save_cursor = getpos('.')
 
 	" Enable matchit debugging to get hold of the internal data.
@@ -193,7 +209,7 @@ if exists('g:loaded_matchit') && g:loaded_matchit
 	    if ! l:isSimpleMatchPair && isMultiLineMatch
 		" Query the user what exactly to delete.
 		echohl Question
-		echo len(l:positions) . ' matches found. Delete (m)atches or (l)ines? '
+		    echo len(l:positions) . ' matches found. Delete (m)atches or (l)ines? '
 		echohl None
 		while 1
 		    let l:key = nr2char(getchar())
@@ -208,12 +224,6 @@ if exists('g:loaded_matchit') && g:loaded_matchit
 	    else
 		" For a simple matchpair, just remove the matchpair itself.
 		let l:action = 'm'
-
-		" Special rule: For C-style comments, also remove the inner
-		" whitespace.
-		if sort(keys(l:matches)) == ['*/', '/*']
-		    let l:patterns = { '\s*\%#\*\/': 1, '\/\*\s*': 1 }
-		endif
 	    endif
 	endif
 
@@ -222,7 +232,7 @@ if exists('g:loaded_matchit') && g:loaded_matchit
 	elseif l:action ==# 'c'
 	    echo 'Canceled deletion of matchpairs'
 	elseif l:action ==# 'm'
-	    call s:DeleteMatches(l:positions, l:patterns)
+	    call s:DeleteMatches(l:positions, l:patterns, a:what)
 	elseif l:action ==# 'l'
 	    call s:DeleteLines(l:positions)
 	else
@@ -241,7 +251,7 @@ if exists('g:loaded_matchit') && g:loaded_matchit
 else
     " Note: The pairs are limited to the single characters of the 'matchpairs'
     " option, no C-style comments or preprocessor conditionals!
-    function! MatchTextObjects#RemoveMatchingPair()
+    function! MatchTextObjects#RemoveMatchingPair( what )
 	let l:save_cursor = getpos('.')
 
 	silent! normal! %
@@ -334,6 +344,7 @@ else
 	endif
     endfunction
 endif
+
 function! MatchTextObjects#RemoveWhitespaceInsideMatchingPair()
     let l:save_view = winsaveview()
 
