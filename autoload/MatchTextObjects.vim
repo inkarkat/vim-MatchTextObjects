@@ -251,29 +251,37 @@ if exists('g:loaded_matchit') && g:loaded_matchit
 else
     " Note: The pairs are limited to the single characters of the 'matchpairs'
     " option, no C-style comments or preprocessor conditionals!
+    function! s:DeleteSingleCharacterMatches( positions )
+	if a:positions[0][1] == a:positions[1][1] && a:positions[0][2] > a:positions[1][2]
+	    " Position A is in the same line behind position B. Because of the same
+	    " line, we need to delete from end to start (as removal of start would
+	    " invalidate end position), so go back to A.
+	    call setpos('.', a:positions[0])
+	    " Swap positions.
+	    let a:positions[0] = a:positions[1]
+	endif
+	normal! x
+	call setpos('.', a:positions[0])
+	normal! x
+    endfunction
     function! MatchTextObjects#RemoveMatchingPair( what )
 	let l:save_cursor = getpos('.')
 
 	silent! normal! %
-	let l:posA = getpos('.')
+	let l:positions = [getpos('.')]
 	silent! normal! %
-	let l:posB = getpos('.')
+	call add(l:positions, getpos('.'))
 
-	if l:posA == l:posB
+	if l:positions[0] == l:positions[1]
 	    call s:SetErrorAndBeep('No matching pairs found')
 	    return 0
 	endif
-	if l:posA[1] == l:posB[1] && l:posA[2] > l:posB[2]
-	    " Position A is in the same line behind position B. Because of the same
-	    " line, we need to delete from end to start (as removal of start would
-	    " invalidate end position), so go back to A.
-	    call setpos('.', l:posA)
-	    " Swap positions.
-	    let l:posA = l:posB
+
+	if empty(a:what)
+	    call s:DeleteSingleCharacterMatches(l:positions)
+	else
+	    call s:DeleteMatches(l:positions, {'\%#.': 1}, a:what) " The cursor position anchors the pattern to the actual matching character, no need to extract it from the buffer.
 	endif
-	normal! x
-	call setpos('.', l:posA)
-	normal! x
 
 	call setpos('.', l:save_cursor)
 
