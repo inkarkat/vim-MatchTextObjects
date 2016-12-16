@@ -4,6 +4,7 @@
 "   - ingo/compat.vim autoload script
 "   - ingo/cursor/move.vim autoload script
 "   - ingo/err.vim autoload script
+"   - ingo/escape.vim autoload script
 "   - ingo/pos.vim autoload script
 "
 " Copyright: (C) 2008-2016 Ingo Karkat
@@ -115,7 +116,10 @@ function! s:DeleteMatches( positions, patterns, what )
 	    let l:search = '\s*\%(' . l:search . '\)\s*'
 	endif
 
-	execute printf('substitute/%s//e', escape(l:search, '/'))
+	" The match patterns from matchit (b:match_ini, b:match_tail) already
+	" have the forward slash escaped. So the escaping here is just a
+	" precaution.
+	execute printf('substitute/%s//e', ingo#escape#OnlyUnescaped(l:search, '/'))
 
 	let l:isLast = 0
     endfor
