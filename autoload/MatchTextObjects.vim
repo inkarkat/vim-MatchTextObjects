@@ -6,6 +6,8 @@
 "   - ingo/err.vim autoload script
 "   - ingo/escape.vim autoload script
 "   - ingo/pos.vim autoload script
+"   - ingo/query/get.vim autoload script
+"   - ingo/regexp/build.vim autoload script
 "
 " Copyright: (C) 2008-2016 Ingo Karkat
 "   The VIM LICENSE applies to this script; see ':help copyright'.
@@ -13,6 +15,12 @@
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 "
 " REVISION	DATE		REMARKS
+"	011	17-Dec-2016	BUG: Cannot d%% #ifdef..#endif; the \%# is
+"				prepended before ^. Use new
+"				ingo#regexp#build#Prepend() function.
+"				Use ingo#err#SetAndBeep().
+"				Replace getchar() loop with new
+"				ingo#query#get#ValidChar().
 "	010	16-Dec-2016	ENH: Add a:what argument to
 "				MatchTextObjects#RemoveMatchingPair(). Support
 "				"i"nner, "o"uter, and "a"ll whitespace removal;
@@ -63,11 +71,6 @@
 "	001	27-Jul-2008	Split off from textobjects.vim
 "				file creation
 
-function! s:SetErrorAndBeep( text )
-    call ingo#err#Set(a:text)
-    execute "normal! \<C-\>\<C-n>\<Esc>" | " Beep.
-endfunction
-
 function! s:ListComparePositions( i1, i2 )
     if a:i1[1] == a:i2[1]
 	" Same line, compare columns.
@@ -92,7 +95,7 @@ function! s:ProcessPatternForReplacement( pattern )
 
     " The cursor must be at the beginning of the match, as we're restoring
     " the match position before deleting the match.
-    return '\%#' . a:pattern
+    return ingo#regexp#build#Prepend(a:pattern, '\%#')
 endfunction
 function! s:DeleteMatches( positions, patterns, what )
     let l:sortedPositions = sort(a:positions, 's:ListComparePositions')
@@ -221,7 +224,7 @@ if exists('g:loaded_matchit') && g:loaded_matchit
 "****D echomsg '**** patterns' string(keys(l:patterns))
 	if len(l:positions) < 2
 	    " Found no or only one part of a match.
-	    let l:action = ''
+	    let l:action = '-'
 	else
 	    let l:maxMatchLen = max(map(keys(l:matches), 'len(v:val)'))
 	    let l:isSimpleMatchPair = (len(l:positions) == 2 && (l:maxMatchLen == 1 || (l:maxMatchLen == 2 && sort(keys(l:matches)) == ['*/', '/*'])))
@@ -231,16 +234,7 @@ if exists('g:loaded_matchit') && g:loaded_matchit
 		echohl Question
 		    echo len(l:positions) . ' matches found. Delete (m)atches or (l)ines? '
 		echohl None
-		while 1
-		    let l:key = nr2char(getchar())
-		    if l:key =~? '^[ml]$'
-			let l:action = tolower(l:key)
-			break
-		    elseif l:key == "\<Esc>"
-			let l:action = 'c'
-			break
-		    endif
-		endwhile
+		let l:action = tolower(ingo#query#get#ValidChar({'validExpr': '\c[ml]'}))
 	    else
 		" For a simple matchpair, just remove the matchpair itself.
 		let l:action = 'm'
@@ -248,9 +242,9 @@ if exists('g:loaded_matchit') && g:loaded_matchit
 	endif
 
 	if empty(l:action)
-	    call s:SetErrorAndBeep('No matching pairs found')
-	elseif l:action ==# 'c'
 	    echo 'Canceled deletion of matchpairs'
+	elseif l:action ==# '-'
+	    call ingo#err#SetAndBeep('No matching pairs found')
 	elseif l:action ==# 'm'
 	    call s:DeleteMatches(l:positions, l:patterns, a:what)
 	elseif l:action ==# 'l'
@@ -293,7 +287,7 @@ else
 	call add(l:positions, getpos('.'))
 
 	if l:positions[0] == l:positions[1]
-	    call s:SetErrorAndBeep('No matching pairs found')
+	    call ingo#err#SetAndBeep('No matching pairs found')
 	    return 0
 	endif
 
@@ -420,7 +414,7 @@ function! MatchTextObjects#RemoveWhitespaceInsideMatchingPair()
     endwhile
 
     call winrestview(l:save_view)
-    call s:SetErrorAndBeep(l:errormsg)
+    call ingo#err#SetAndBeep(l:errormsg)
     return 0
 endfunction
 
@@ -432,11 +426,11 @@ function! MatchTextObjects#RemoveEndEditStartMotion( ... )
     let [l:startMatchPos, l:startLength, l:endMatchPos, l:endLength] = MatchTextObjects#GetPairPositionsAndLengths()
     if empty(l:startMatchPos)
 	call winrestview(l:save_view)
-	call s:SetErrorAndBeep('No matching pairs found')
+	call ingo#err#SetAndBeep('No matching pairs found')
 	return 0
     elseif l:startMatchPos[1] < l:save_cursor[1] || l:startMatchPos[1] == l:save_cursor[1] && l:startMatchPos[2] < l:save_cursor[2]
 	call winrestview(l:save_view)
-	call s:SetErrorAndBeep('Cursor not before, but inside matching pairs')
+	call ingo#err#SetAndBeep('Cursor not before, but inside matching pairs')
 	return 0
     endif
 
