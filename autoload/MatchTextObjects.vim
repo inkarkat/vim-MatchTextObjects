@@ -21,6 +21,8 @@
 "				Use ingo#err#SetAndBeep().
 "				Replace getchar() loop with new
 "				ingo#query#get#ValidChar().
+"				Query only for d%%, remove matches for all other
+"				variants.
 "	010	16-Dec-2016	ENH: Add a:what argument to
 "				MatchTextObjects#RemoveMatchingPair(). Support
 "				"i"nner, "o"uter, and "a"ll whitespace removal;
@@ -229,7 +231,7 @@ if exists('g:loaded_matchit') && g:loaded_matchit
 	    let l:maxMatchLen = max(map(keys(l:matches), 'len(v:val)'))
 	    let l:isSimpleMatchPair = (len(l:positions) == 2 && (l:maxMatchLen == 1 || (l:maxMatchLen == 2 && sort(keys(l:matches)) == ['*/', '/*'])))
 	    let l:isMultiLineMatch = (len(s:GetUniqueLines(l:positions)) > 1)
-	    if ! l:isSimpleMatchPair && isMultiLineMatch
+	    if empty(a:what) && ! l:isSimpleMatchPair && isMultiLineMatch
 		" Query the user what exactly to delete.
 		echohl Question
 		    echo len(l:positions) . ' matches found. Delete (m)atches or (l)ines? '
