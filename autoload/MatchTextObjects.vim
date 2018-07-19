@@ -133,6 +133,30 @@ function! s:DeleteMatches( positions, patterns, what )
 
     call histdel('search', -1)
 endfunction
+    function! s:ScalarCompareNumerical( i1, i2 )
+	let l:n1 = 0 + a:i1
+	let l:n2 = 0 + a:i2
+	return l:n1 == l:n2 ? 0 : l:n1 > l:n2 ? 1 : -1
+    endfunction
+    function! s:GetUniqueLines( positions )
+	let l:lines = {}
+	for l:pos in a:positions
+	    let l:lines[ l:pos[1] ] = 1
+	endfor
+	return keys(l:lines)
+    endfunction
+    function! s:DeleteLines( positions )
+	" Delete unique lines from end to begin, so that the line numbers remain
+	" valid throughout the operation.
+	let l:lines = s:GetUniqueLines(a:positions)
+	for l:line in reverse(sort(l:lines, 's:ScalarCompareNumerical'))
+	    execute l:line . 'delete _'
+	endfor
+	echo len(l:lines) 'fewer lines'
+    endfunction
+function! s:IsMultiLineMatch( positions )
+    return (len(s:GetUniqueLines(a:positions)) > 1)
+endfunction
 
 if exists('g:loaded_matchit') && g:loaded_matchit
     function! s:MatchNum( expr, pattern )
@@ -179,27 +203,6 @@ if exists('g:loaded_matchit') && g:loaded_matchit
 	    endfor
 	endfor
     endfunction
-    function! s:ScalarCompareNumerical( i1, i2 )
-	let l:n1 = 0 + a:i1
-	let l:n2 = 0 + a:i2
-	return l:n1 == l:n2 ? 0 : l:n1 > l:n2 ? 1 : -1
-    endfunction
-    function! s:GetUniqueLines( positions )
-	let l:lines = {}
-	for l:pos in a:positions
-	    let l:lines[ l:pos[1] ] = 1
-	endfor
-	return keys(l:lines)
-    endfunction
-    function! s:DeleteLines( positions )
-	" Delete unique lines from end to begin, so that the line numbers remain
-	" valid throughout the operation.
-	let l:lines = s:GetUniqueLines(a:positions)
-	for l:line in reverse(sort(l:lines, 's:ScalarCompareNumerical'))
-	    execute l:line . 'delete _'
-	endfor
-	echo len(l:lines) 'fewer lines'
-    endfunction
     function! MatchTextObjects#RemoveMatchingPair( what )
 	let l:save_cursor = ingo#compat#getcurpos()
 
@@ -232,7 +235,7 @@ if exists('g:loaded_matchit') && g:loaded_matchit
 	else
 	    let l:maxMatchLen = max(map(keys(l:matches), 'len(v:val)'))
 	    let l:isSimpleMatchPair = (len(l:positions) == 2 && (l:maxMatchLen == 1 || (l:maxMatchLen == 2 && sort(keys(l:matches)) == ['*/', '/*'])))
-	    let l:isMultiLineMatch = (len(s:GetUniqueLines(l:positions)) > 1)
+	    let l:isMultiLineMatch = s:IsMultiLineMatch(l:positions)
 	    if empty(a:what) && ! l:isSimpleMatchPair && l:isMultiLineMatch
 		" Query the user what exactly to delete.
 		echohl Question
@@ -299,15 +302,23 @@ else
 	    return 0
 	endif
 
+	let l:isSuccess = 1
 	if empty(a:what)
 	    call s:DeleteSingleCharacterMatches(l:positions)
+	elseif a:what ==# 'l'
+	    if s:IsMultiLineMatch(l:positions)
+		call s:DeleteLines(l:positions)
+	    else
+		call ingo#err#SetAndBeep('Matching pairs are not on separate lines')
+		let l:isSuccess = 0
+	    endif
 	else
 	    call s:DeleteMatches(l:positions, {'\%#.': 1}, a:what) " The cursor position anchors the pattern to the actual matching character, no need to extract it from the buffer.
 	endif
 
 	call setpos('.', l:save_cursor)
 
-	return 1
+	return l:isSuccess
     endfunction
 endif
 
