@@ -36,12 +36,18 @@ RELATED WORKS								     *
 
 ==============================================================================
 USAGE						      *MatchTextObjects-usage*
-									 *d%%*
+						       *d%%* *d%i* *d%o* *d%a*
 d%%			Remove matching pair characters.
 			Complex |matchit| plugin matches can also be deleted.
 			The plugin asks whether only the match or the complete
 			matching lines should be removed. This is useful to
 			e.g. remove HTML tags or #ifdef..#endif directives.
+d%i			Remove matching pair characters, and any whitespace
+			inside.
+d%o			Remove matching pair characters, and any whitespace
+			outside.
+d%a			Remove matching pair characters, and all whitespace
+			around them, both inside and outside.
 								   *d%<Space>*
 d%<Space>		Remove the whitespace inside the next matching pair
 			that contains whitespace.
@@ -76,6 +82,8 @@ To uninstall, use the |:RmVimball| command.
 DEPENDENCIES				       *MatchTextObjects-dependencies*
 
 - Requires Vim 7.0 or higher.
+- Requires the |ingo-library.vim| plugin (vimscript #4433), version 1.029 or
+  higher.
 
 ==============================================================================
 CONFIGURATION				      *MatchTextObjects-configuration*
@@ -87,6 +95,11 @@ plugmap
 
 ==============================================================================
 INTEGRATION					*MatchTextObjects-integration*
+
+Plain Vim can only match single-character pairs like ( and ), [ and ]. With
+the |matchit| plugin, arbitrary pairs (also tuples like if..else..endif) can
+be matched. This plugin recognizes |matchit| and then uses its advanced
+detection to handle those complex pairs, too.
 
 ==============================================================================
 LIMITATIONS					*MatchTextObjects-limitations*
@@ -109,7 +122,7 @@ First published version.
 Started development.
 
 ==============================================================================
-Copyright: (C) 2008-2013 Ingo Karkat
+Copyright: (C) 2008-2016 Ingo Karkat
 The VIM LICENSE applies to this plugin; see |copyright|.
 
 Maintainer:	Ingo Karkat <ingo@karkat.de>
