@@ -9,12 +9,14 @@
 "   - ingo/query/get.vim autoload script
 "   - ingo/regexp/build.vim autoload script
 "
-" Copyright: (C) 2008-2016 Ingo Karkat
+" Copyright: (C) 2008-2018 Ingo Karkat
 "   The VIM LICENSE applies to this script; see ':help copyright'.
 "
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 "
 " REVISION	DATE		REMARKS
+"	012	20-Jul-2018	ENH: Make MatchTextObjects#RemoveMatchingPair
+"                               also handle a:what = 'l' for new d%l mapping.
 "	011	17-Dec-2016	BUG: Cannot d%% #ifdef..#endif; the \%# is
 "				prepended before ^. Use new
 "				ingo#regexp#build#Prepend() function.
@@ -231,12 +233,14 @@ if exists('g:loaded_matchit') && g:loaded_matchit
 	    let l:maxMatchLen = max(map(keys(l:matches), 'len(v:val)'))
 	    let l:isSimpleMatchPair = (len(l:positions) == 2 && (l:maxMatchLen == 1 || (l:maxMatchLen == 2 && sort(keys(l:matches)) == ['*/', '/*'])))
 	    let l:isMultiLineMatch = (len(s:GetUniqueLines(l:positions)) > 1)
-	    if empty(a:what) && ! l:isSimpleMatchPair && isMultiLineMatch
+	    if empty(a:what) && ! l:isSimpleMatchPair && l:isMultiLineMatch
 		" Query the user what exactly to delete.
 		echohl Question
 		    echo len(l:positions) . ' matches found. Delete (m)atches or (l)ines? '
 		echohl None
 		let l:action = tolower(ingo#query#get#ValidChar({'validExpr': '\c[ml]'}))
+	    elseif a:what ==# 'l'
+		let l:action = (l:isMultiLineMatch ? 'l' : '-l')
 	    else
 		" For a simple matchpair, just remove the matchpair itself.
 		let l:action = 'm'
@@ -247,6 +251,8 @@ if exists('g:loaded_matchit') && g:loaded_matchit
 	    echo 'Canceled deletion of matchpairs'
 	elseif l:action ==# '-'
 	    call ingo#err#SetAndBeep('No matching pairs found')
+	elseif l:action ==# '-l'
+	    call ingo#err#SetAndBeep('Matching pairs are not on separate lines')
 	elseif l:action ==# 'm'
 	    call s:DeleteMatches(l:positions, l:patterns, a:what)
 	elseif l:action ==# 'l'
