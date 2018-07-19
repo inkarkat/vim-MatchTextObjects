@@ -5,12 +5,15 @@
 "   - ingo/err.vim autoload script
 "   - repeat.vim (vimscript #2136) autoload script (optional)
 "
-" Copyright: (C) 2008-2014 Ingo Karkat
+" Copyright: (C) 2008-2016 Ingo Karkat
 "   The VIM LICENSE applies to this script; see ':help copyright'.
 "
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 "
 " REVISION	DATE		REMARKS
+"	007	16-Dec-2016	ENH: Add d%i, d%o, d%a variants of d%% that
+"				remove certain whitespace as well. d%% drops the
+"				special rule for C-style comments.
 "	006	05-May-2014	Abort on error.
 "	005	09-Jan-2013	Add omap ,% and vmap ,%.
 "	004	08-Jan-2013	Rename to MatchTextObjects.vim.
@@ -32,10 +35,31 @@ set cpo&vim
 " Note: Need to make the no-op modification only when necessary to keep the
 " original repeat.vim sequence enabled when this mapping errors out; otherwise,
 " b:changedtick is incremented, turning off repeat.vim.
-nnoremap <silent> <Plug>(MatchTextObjectsRemovePair)       :<C-u>
+nnoremap <silent> <Plug>(MatchTextObjectsRemovePair)        :<C-u>
 \if !&ma<Bar><Bar>&ro<Bar>call setline('.', getline('.'))<Bar>endif<Bar>
-\if MatchTextObjects#RemoveMatchingPair()<Bar>
+\if MatchTextObjects#RemoveMatchingPair('')<Bar>
 \   silent! call repeat#set("\<lt>Plug>(MatchTextObjectsRemovePair)")<Bar>
+\else<Bar>
+\   echoerr ingo#err#Get()<Bar>
+\endif<CR>
+nnoremap <silent> <Plug>(MatchTextObjectsRemovePairInner)   :<C-u>
+\if !&ma<Bar><Bar>&ro<Bar>call setline('.', getline('.'))<Bar>endif<Bar>
+\if MatchTextObjects#RemoveMatchingPair('i')<Bar>
+\   silent! call repeat#set("\<lt>Plug>(MatchTextObjectsRemovePairInner)")<Bar>
+\else<Bar>
+\   echoerr ingo#err#Get()<Bar>
+\endif<CR>
+nnoremap <silent> <Plug>(MatchTextObjectsRemovePairOuter)   :<C-u>
+\if !&ma<Bar><Bar>&ro<Bar>call setline('.', getline('.'))<Bar>endif<Bar>
+\if MatchTextObjects#RemoveMatchingPair('o')<Bar>
+\   silent! call repeat#set("\<lt>Plug>(MatchTextObjectsRemovePairOuter)")<Bar>
+\else<Bar>
+\   echoerr ingo#err#Get()<Bar>
+\endif<CR>
+nnoremap <silent> <Plug>(MatchTextObjectsRemovePairAll)   :<C-u>
+\if !&ma<Bar><Bar>&ro<Bar>call setline('.', getline('.'))<Bar>endif<Bar>
+\if MatchTextObjects#RemoveMatchingPair('a')<Bar>
+\   silent! call repeat#set("\<lt>Plug>(MatchTextObjectsRemovePairAll)")<Bar>
 \else<Bar>
 \   echoerr ingo#err#Get()<Bar>
 \endif<CR>
@@ -49,6 +73,15 @@ nnoremap <silent> <Plug>(MatchTextObjectsRemoveWhitespace) :<C-u>
 
 if ! hasmapto('<Plug>(MatchTextObjectsRemovePair)', 'n')
     nmap d%% <Plug>(MatchTextObjectsRemovePair)
+endif
+if ! hasmapto('<Plug>(MatchTextObjectsRemovePairInner)', 'n')
+    nmap d%i <Plug>(MatchTextObjectsRemovePairInner)
+endif
+if ! hasmapto('<Plug>(MatchTextObjectsRemovePairOuter)', 'n')
+    nmap d%o <Plug>(MatchTextObjectsRemovePairOuter)
+endif
+if ! hasmapto('<Plug>(MatchTextObjectsRemovePairAll)', 'n')
+    nmap d%a <Plug>(MatchTextObjectsRemovePairAll)
 endif
 if ! hasmapto('<Plug>(MatchTextObjectsRemoveWhitespace)', 'n')
     nmap d%<Space> <Plug>(MatchTextObjectsRemoveWhitespace)
