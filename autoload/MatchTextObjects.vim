@@ -17,6 +17,11 @@
 " REVISION	DATE		REMARKS
 "	012	20-Jul-2018	ENH: Make MatchTextObjects#RemoveMatchingPair
 "                               also handle a:what = 'l' for new d%l mapping.
+"                               ENH: Set change marks when deleting complete
+"                               lines that contain the matching pair characters
+"                               to what was enclosed by them. (Before, the
+"                               change markers only deliminated the first
+"                               matching one.)
 "	011	17-Dec-2016	BUG: Cannot d%% #ifdef..#endif; the \%# is
 "				prepended before ^. Use new
 "				ingo#regexp#build#Prepend() function.
@@ -153,6 +158,9 @@ endfunction
 	    execute l:line . 'delete _'
 	endfor
 	echo len(l:lines) 'fewer lines'
+
+	call setpos("'[", [0, l:lines[-1], 1, 0])
+	call setpos("']", [0, l:lines[0] - len(l:lines), 1, 0])
     endfunction
 function! s:IsMultiLineMatch( positions )
     return (len(s:GetUniqueLines(a:positions)) > 1)
