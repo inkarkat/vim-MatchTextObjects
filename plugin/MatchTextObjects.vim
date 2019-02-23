@@ -5,12 +5,17 @@
 "   - ingo/err.vim autoload script
 "   - repeat.vim (vimscript #2136) autoload script (optional)
 "
-" Copyright: (C) 2008-2016 Ingo Karkat
+" Copyright: (C) 2008-2018 Ingo Karkat
 "   The VIM LICENSE applies to this script; see ':help copyright'.
 "
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 "
 " REVISION	DATE		REMARKS
+"	008	20-Jul-2018	ENH: Add d%l variant. d%% does query for removal
+"                               of matches or lines, but only for complex match
+"                               pairs; we cannot remove lines containing { and
+"                               } with it, for example. (Also for complex match
+"                               pairs, it may be desirable to avoid the query.)
 "	007	16-Dec-2016	ENH: Add d%i, d%o, d%a variants of d%% that
 "				remove certain whitespace as well. d%% drops the
 "				special rule for C-style comments.
@@ -63,6 +68,13 @@ nnoremap <silent> <Plug>(MatchTextObjectsRemovePairAll)   :<C-u>
 \else<Bar>
 \   echoerr ingo#err#Get()<Bar>
 \endif<CR>
+nnoremap <silent> <Plug>(MatchTextObjectsRemovePairLines)   :<C-u>
+\if !&ma<Bar><Bar>&ro<Bar>call setline('.', getline('.'))<Bar>endif<Bar>
+\if MatchTextObjects#RemoveMatchingPair('l')<Bar>
+\   silent! call repeat#set("\<lt>Plug>(MatchTextObjectsRemovePairLines)")<Bar>
+\else<Bar>
+\   echoerr ingo#err#Get()<Bar>
+\endif<CR>
 nnoremap <silent> <Plug>(MatchTextObjectsRemoveWhitespace) :<C-u>
 \if !&ma<Bar><Bar>&ro<Bar>call setline('.', getline('.'))<Bar>endif<Bar>
 \if MatchTextObjects#RemoveWhitespaceInsideMatchingPair()<Bar>
@@ -82,6 +94,9 @@ if ! hasmapto('<Plug>(MatchTextObjectsRemovePairOuter)', 'n')
 endif
 if ! hasmapto('<Plug>(MatchTextObjectsRemovePairAll)', 'n')
     nmap d%a <Plug>(MatchTextObjectsRemovePairAll)
+endif
+if ! hasmapto('<Plug>(MatchTextObjectsRemovePairLines)', 'n')
+    nmap d%l <Plug>(MatchTextObjectsRemovePairLines)
 endif
 if ! hasmapto('<Plug>(MatchTextObjectsRemoveWhitespace)', 'n')
     nmap d%<Space> <Plug>(MatchTextObjectsRemoveWhitespace)
