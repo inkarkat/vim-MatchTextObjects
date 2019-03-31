@@ -36,7 +36,7 @@ RELATED WORKS								     *
 
 ==============================================================================
 USAGE						      *MatchTextObjects-usage*
-						       *d%%* *d%i* *d%o* *d%a*
+						 *d%%* *d%i* *d%o* *d%a* *d%l*
 d%%			Remove matching pair characters.
 			Complex |matchit| plugin matches can also be deleted.
 			The plugin asks whether only the match or the complete
@@ -48,6 +48,8 @@ d%o			Remove matching pair characters, and any whitespace
 			outside.
 d%a			Remove matching pair characters, and all whitespace
 			around them, both inside and outside.
+d%l			Remove all complete lines that contain matching pair
+			characters.
 								   *d%<Space>*
 d%<Space>		Remove the whitespace inside the next matching pair
 			that contains whitespace.
@@ -122,7 +124,7 @@ First published version.
 Started development.
 
 ==============================================================================
-Copyright: (C) 2008-2016 Ingo Karkat
+Copyright: (C) 2008-2018 Ingo Karkat
 The VIM LICENSE applies to this plugin; see |copyright|.
 
 Maintainer:	Ingo Karkat <ingo@karkat.de>
