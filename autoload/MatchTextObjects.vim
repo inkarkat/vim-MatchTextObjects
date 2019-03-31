@@ -9,19 +9,19 @@
 "   - ingo/query/get.vim autoload script
 "   - ingo/regexp/build.vim autoload script
 "
-" Copyright: (C) 2008-2018 Ingo Karkat
+" Copyright: (C) 2008-2019 Ingo Karkat
 "   The VIM LICENSE applies to this script; see ':help copyright'.
 "
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 "
 " REVISION	DATE		REMARKS
 "	012	20-Jul-2018	ENH: Make MatchTextObjects#RemoveMatchingPair
-"                               also handle a:what = 'l' for new d%l mapping.
-"                               ENH: Set change marks when deleting complete
-"                               lines that contain the matching pair characters
-"                               to what was enclosed by them. (Before, the
-"                               change markers only deliminated the first
-"                               matching one.)
+"				also handle a:what = 'l' for new d%l mapping.
+"				ENH: Set change marks when deleting complete
+"				lines that contain the matching pair characters
+"				to what was enclosed by them. (Before, the
+"				change markers only deliminated the first
+"				matching one.)
 "	011	17-Dec-2016	BUG: Cannot d%% #ifdef..#endif; the \%# is
 "				prepended before ^. Use new
 "				ingo#regexp#build#Prepend() function.
