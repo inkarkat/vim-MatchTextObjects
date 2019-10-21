@@ -1,13 +1,7 @@
 " MatchTextObjects.vim: Additional text objects for % matches.
 "
 " DEPENDENCIES:
-"   - ingo/compat.vim autoload script
-"   - ingo/cursor/move.vim autoload script
-"   - ingo/err.vim autoload script
-"   - ingo/escape.vim autoload script
-"   - ingo/pos.vim autoload script
-"   - ingo/query/get.vim autoload script
-"   - ingo/regexp/build.vim autoload script
+"   - ingo-library.vim plugin
 "
 " Copyright: (C) 2008-2019 Ingo Karkat
 "   The VIM LICENSE applies to this script; see ':help copyright'.
@@ -15,6 +9,7 @@
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 "
 " REVISION	DATE		REMARKS
+"	013	01-Apr-2019	Refactoring: Use ingo#change#Set().
 "	012	20-Jul-2018	ENH: Make MatchTextObjects#RemoveMatchingPair
 "				also handle a:what = 'l' for new d%l mapping.
 "				ENH: Set change marks when deleting complete
@@ -159,8 +154,7 @@ endfunction
 	endfor
 	echo len(l:lines) 'fewer lines'
 
-	call setpos("'[", [0, l:lines[-1], 1, 0])
-	call setpos("']", [0, l:lines[0] - len(l:lines), 1, 0])
+	call ingo#change#Set([l:lines[-1], 1], [l:lines[0] - len(l:lines), 1])
     endfunction
 function! s:IsMultiLineMatch( positions )
     return (len(s:GetUniqueLines(a:positions)) > 1)
