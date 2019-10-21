@@ -5,17 +5,17 @@
 "   - ingo/err.vim autoload script
 "   - repeat.vim (vimscript #2136) autoload script (optional)
 "
-" Copyright: (C) 2008-2018 Ingo Karkat
+" Copyright: (C) 2008-2019 Ingo Karkat
 "   The VIM LICENSE applies to this script; see ':help copyright'.
 "
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 "
 " REVISION	DATE		REMARKS
 "	008	20-Jul-2018	ENH: Add d%l variant. d%% does query for removal
-"                               of matches or lines, but only for complex match
-"                               pairs; we cannot remove lines containing { and
-"                               } with it, for example. (Also for complex match
-"                               pairs, it may be desirable to avoid the query.)
+"				of matches or lines, but only for complex match
+"				pairs; we cannot remove lines containing { and
+"				} with it, for example. (Also for complex match
+"				pairs, it may be desirable to avoid the query.)
 "	007	16-Dec-2016	ENH: Add d%i, d%o, d%a variants of d%% that
 "				remove certain whitespace as well. d%% drops the
 "				special rule for C-style comments.
