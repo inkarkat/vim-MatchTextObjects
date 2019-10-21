@@ -15,13 +15,21 @@ history				|MatchTextObjects-history|
 ==============================================================================
 DESCRIPTION					*MatchTextObjects-description*
 
-This script defines a |d%%| command which removes the matching pairs
-(determined via the |%| command and the 'matchpairs' option), but not the
-content in between. With support of the |matchit| plugin, more complex
-user-defined matches (like HTML tags or "if-else-endif") can also be deleted.
-For these complex matches, either only the match or the complete matching
-lines can be removed. The latter can be useful e.g. to remove C preprocessor
-#ifdef...#endif directives.
+This plugin defines a |d%%| command (and more specific variants) which remove
+the matching pairs (determined via the |%| command and the 'matchpairs'
+option), but not the content in between. With support of the |matchit| plugin,
+more complex user-defined matches (like HTML tags or "if-else-endif") can also
+be deleted. For these complex matches, either only the match or the complete
+matching lines can be removed. The latter can be useful e.g. to remove C
+preprocessor #ifdef...#endif directives. The matches function as quasi "text
+objects" (even though they aren't such, and only work with the delete
+operator).
+,% is another special "text object" that is mostly used with delete and change
+operators, and works on the text up to the start match, but also deletes the
+end match. This is very useful on function invocations, so d,% changes
+    foo(bar); ~
+to
+    foo;~
 
 HOW IT WORKS								     *
 
