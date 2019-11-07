@@ -11,6 +11,8 @@
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 "
 " REVISION	DATE		REMARKS
+"	009	22-Oct-2019	Add d%< variant of d%l that also dedents the
+"				remaining inner lines.
 "	008	20-Jul-2018	ENH: Add d%l variant. d%% does query for removal
 "				of matches or lines, but only for complex match
 "				pairs; we cannot remove lines containing { and
@@ -75,6 +77,13 @@ nnoremap <silent> <Plug>(MatchTextObjectsRemovePairLines)   :<C-u>
 \else<Bar>
 \   echoerr ingo#err#Get()<Bar>
 \endif<CR>
+nnoremap <silent> <Plug>(MatchTextObjectsRemovePairDedent)   :<C-u>
+\if !&ma<Bar><Bar>&ro<Bar>call setline('.', getline('.'))<Bar>endif<Bar>
+\if MatchTextObjects#RemoveMatchingPair('<lt>')<Bar>
+\   silent! call repeat#set("\<lt>Plug>(MatchTextObjectsRemovePairDedent)")<Bar>
+\else<Bar>
+\   echoerr ingo#err#Get()<Bar>
+\endif<CR>
 nnoremap <silent> <Plug>(MatchTextObjectsRemoveWhitespace) :<C-u>
 \if !&ma<Bar><Bar>&ro<Bar>call setline('.', getline('.'))<Bar>endif<Bar>
 \if MatchTextObjects#RemoveWhitespaceInsideMatchingPair()<Bar>
@@ -97,6 +106,9 @@ if ! hasmapto('<Plug>(MatchTextObjectsRemovePairAll)', 'n')
 endif
 if ! hasmapto('<Plug>(MatchTextObjectsRemovePairLines)', 'n')
     nmap d%l <Plug>(MatchTextObjectsRemovePairLines)
+endif
+if ! hasmapto('<Plug>(MatchTextObjectsRemovePairDedent)', 'n')
+    nmap d%<lt> <Plug>(MatchTextObjectsRemovePairDedent)
 endif
 if ! hasmapto('<Plug>(MatchTextObjectsRemoveWhitespace)', 'n')
     nmap d%<Space> <Plug>(MatchTextObjectsRemoveWhitespace)
