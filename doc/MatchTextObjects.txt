@@ -34,7 +34,9 @@ to
 HOW IT WORKS								     *
 
 SOURCE									     *
-(Original Vim tip, Stack Overflow answer, ...)
+
+- d%< has been inspired by
+  https://stackoverflow.com/questions/58503153/vim-delete-parent-parenthesis-and-reindent-child
 
 SEE ALSO								     *
 (Plugins offering complementary functionality, or plugins using this library.)
@@ -44,7 +46,7 @@ RELATED WORKS								     *
 
 ==============================================================================
 USAGE						      *MatchTextObjects-usage*
-						 *d%%* *d%i* *d%o* *d%a* *d%l*
+					   *d%%* *d%i* *d%o* *d%a* *d%l* *d%<*
 d%%			Remove matching pair characters.
 			Complex |matchit| plugin matches can also be deleted.
 			The plugin asks whether only the match or the complete
@@ -58,6 +60,9 @@ d%a			Remove matching pair characters, and all whitespace
 			around them, both inside and outside.
 d%l			Remove all complete lines that contain matching pair
 			characters.
+d%<			Remove all complete lines that contain matching pair
+			characters, and dedent the remaining lines inside the
+			pair.
 								   *d%<Space>*
 d%<Space>		Remove the whitespace inside the next matching pair
 			that contains whitespace.
