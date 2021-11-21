@@ -1,8 +1,7 @@
 " MatchTextObjects.vim: Additional text objects for % matches.
 "
 " DEPENDENCIES:
-"   - MatchTextObjects.vim autoload script
-"   - ingo/err.vim autoload script
+"   - ingo-library.vim plugin
 "   - repeat.vim (vimscript #2136) autoload script (optional)
 "
 " Copyright: (C) 2008-2019 Ingo Karkat
@@ -11,6 +10,11 @@
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 "
 " REVISION	DATE		REMARKS
+"	010	08-Nov-2019	Use ingo#register#pending#ExecuteOrFunc() for
+"				:omap to prevent the custom text object
+"				clobbering the register passed to a custom
+"				operator; cp.
+"				https://vi.stackexchange.com/questions/20322/how-to-pass-vregister-to-custom-operator-when-working-on-custom-text-object
 "	009	22-Oct-2019	Add d%< variant of d%l that also dedents the
 "				remaining inner lines.
 "	008	20-Jul-2018	ENH: Add d%l variant. d%% does query for removal
@@ -114,7 +118,7 @@ if ! hasmapto('<Plug>(MatchTextObjectsRemoveWhitespace)', 'n')
     nmap d%<Space> <Plug>(MatchTextObjectsRemoveWhitespace)
 endif
 
-onoremap <silent> <Plug>(MatchTextObjectsRemoveEndEditStartMotion) :<C-u>if ! MatchTextObjects#RemoveEndEditStartMotion()<Bar>echoerr ingo#err#Get()<Bar>endif<CR>
+onoremap <silent> <Plug>(MatchTextObjectsRemoveEndEditStartMotion) :<C-u>if ! ingo#register#pending#ExecuteOrFunc(function('MatchTextObjects#RemoveEndEditStartMotion'))<Bar>echoerr ingo#err#Get()<Bar>endif<CR>
 vnoremap <silent> <Plug>(MatchTextObjectsRemoveEndEditStartMotion) :<C-u>if ! MatchTextObjects#RemoveEndEditStartVisual()<Bar>echoerr ingo#err#Get()<Bar>endif<CR>
 if ! hasmapto('<Plug>(MatchTextObjectsRemoveEndEditStartMotion)', 'o')
     omap ,% <Plug>(MatchTextObjectsRemoveEndEditStartMotion)
