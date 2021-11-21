@@ -9,6 +9,7 @@
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 "
 " REVISION	DATE		REMARKS
+"	014	22-Oct-2019	ENH: Handle a:what = '<'.
 "	013	01-Apr-2019	Refactoring: Use ingo#change#Set().
 "	012	20-Jul-2018	ENH: Make MatchTextObjects#RemoveMatchingPair
 "				also handle a:what = 'l' for new d%l mapping.
@@ -244,8 +245,8 @@ if exists('g:loaded_matchit') && g:loaded_matchit
 		    echo len(l:positions) . ' matches found. Delete (m)atches or (l)ines? '
 		echohl None
 		let l:action = tolower(ingo#query#get#ValidChar({'validExpr': '\c[ml]'}))
-	    elseif a:what ==# 'l'
-		let l:action = (l:isMultiLineMatch ? 'l' : '-l')
+	    elseif a:what =~# '^[l<]$'
+		let l:action = (l:isMultiLineMatch ? a:what : '-l')
 	    else
 		" For a simple matchpair, just remove the matchpair itself.
 		let l:action = 'm'
@@ -262,6 +263,9 @@ if exists('g:loaded_matchit') && g:loaded_matchit
 	    call s:DeleteMatches(l:positions, l:patterns, a:what)
 	elseif l:action ==# 'l'
 	    call s:DeleteLines(l:positions)
+	elseif l:action ==# '<'
+	    call s:DeleteLines(l:positions)
+	    '[,']<
 	else
 	    throw 'ASSERT: Unhandled l:action: ' . l:action
 	endif
