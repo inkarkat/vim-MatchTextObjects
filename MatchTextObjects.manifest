@@ -1,4 +1,3 @@
-autoload/ingocursormove.vim
 autoload/MatchTextObjects.vim
 plugin/MatchTextObjects.vim
 doc/MatchTextObjects.txt
