@@ -1,0 +1,46 @@
+" (In the 80's), Dan "Duckling Dock" Diestle won the world wrestling record. 
+" (In the 80's), Dan "Duckling Dock" Diestle |won the |world| wrestling| record. 
+" (In the 80's), Dan "Duckling Dock" Diestle (won the (world) wrestling) record. 
+" ((In the 80's), Dan "Duckling Dock" Diestle (won the (world) wrestling) record. )
+
+This is /* foobar */ in here. 
+/* foobar
+   some very strange comments
+   in this area. 
+ */
+if foo() | let l:a=1 | else | let l:a=2 | endif
+
+#ifdef foo
+	char[] text = 'foo';
+#elif bar
+	char[] text = 'bar';
+#else
+	char[] text = 'hehe';
+#endif
+
+function! s:ListComparePositions( i1, i2 )
+    if a:i1[1] == a:i2[1]
+        " Same line, compare columns. 
+        return a:i1[2] == a:i2[2] ? 0 : a:i1[2] > a:i2[2] ? 1 : -1
+    else
+        return a:i1[1] > a:i2[1] ? 1 : -1
+    endif
+endfunction
+
+
+<body>
+    <p> <a href="javascript:alert();"> alert! </a> </p>
+    <p>
+	    foo <b><em>bar</em> <code>la</code>tral</b>alalala
+    </p>
+    <div class="foobar" align="left">
+	    asdfoasdf; asj
+    </div>
+    <ul class="noindent"> asfkdlkj
+	    <li style="foo">sdf asjsdf asdjk</li>
+	    asdflkfjasdjk
+	    <li>afkjasdfkdl</li>
+    </ul>
+</body>
+
+
