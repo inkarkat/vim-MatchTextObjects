@@ -3,78 +3,12 @@
 " DEPENDENCIES:
 "   - ingo-library.vim plugin
 "
-" Copyright: (C) 2008-2019 Ingo Karkat
+" Copyright: (C) 2008-2022 Ingo Karkat
 "   The VIM LICENSE applies to this script; see ':help copyright'.
 "
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
-"
-" REVISION	DATE		REMARKS
-"	014	22-Oct-2019	ENH: Handle a:what = '<'.
-"	013	01-Apr-2019	Refactoring: Use ingo#change#Set().
-"	012	20-Jul-2018	ENH: Make MatchTextObjects#RemoveMatchingPair
-"				also handle a:what = 'l' for new d%l mapping.
-"				ENH: Set change marks when deleting complete
-"				lines that contain the matching pair characters
-"				to what was enclosed by them. (Before, the
-"				change markers only deliminated the first
-"				matching one.)
-"	011	17-Dec-2016	BUG: Cannot d%% #ifdef..#endif; the \%# is
-"				prepended before ^. Use new
-"				ingo#regexp#build#Prepend() function.
-"				Use ingo#err#SetAndBeep().
-"				Replace getchar() loop with new
-"				ingo#query#get#ValidChar().
-"				Query only for d%%, remove matches for all other
-"				variants.
-"	010	16-Dec-2016	ENH: Add a:what argument to
-"				MatchTextObjects#RemoveMatchingPair(). Support
-"				"i"nner, "o"uter, and "a"ll whitespace removal;
-"				drop the special rule for C-style comments in
-"				its stead.
-"				Use ingo#compat#getcurpos() for saving the
-"				cursor position.
-"				Move s:ListComparePositions(),
-"				s:ProcessPatternForReplacement(),
-"				s:DeleteMatches() out of the :if
-"				g:loaded_matchit conditional, and use them also
-"				for the new types in the case of
-"				single-character matches.
-"				Use ingo/pos.vim functions.
-"	009	05-May-2014	Abort on error.
-"	008	20-Nov-2013	Need to use ingo#compat#setpos() to make a
-"				selection in Vim versions before 7.3.590.
-"	007	03-Jul-2013	Move ingocursormove.vim into ingo-library.
-"	006	16-Feb-2013	Make s:GetPairPositionsAndLengths() public for
-"				re-use by other plugins.
-"				Rename variables to make their contents clearer.
-"	005	09-Jan-2013	Factor start match end position correction out
-"				of s:GetPairPositions() and rename to
-"				s:GetPairPositionsAndLengths() to allow reuse
-"				for ,% omap.
-"				Add omap ,% via
-"				MatchTextObjects#RemoveEndEditStartMotion().
-"				Add vmap ,% via
-"				MatchTextObjects#RemoveEndEditStartVisual().
-"	004	08-Jan-2013	Rename to MatchTextObjects.vim.
-"				Change warning messages into either :echo or
-"				error message.
-"				Avoid clobbering search history with
-"				:substitute.
-"				Don't clobber the default register with the last
-"				deleted match line.
-"				Consistently beep on d%<Space> error.
-"				Return status to enable repeating via
-"				repeat.vim.
-"				Add matchit implementation of d%<Space>.
-"				FIX: Do not remove one inner match (e.g. "!"
-"				from b:match_words = "<:!:>" in "a!b!c") when
-"				the start / end matches are missing. Ensure that
-"				g% actually moves.
-"	003	07-Jan-2013	Split off functions into autoload script.
-"				Implement d%<Space> for non-matchit case.
-"	002	11-Feb-2009	Now setting v:warningmsg on warning.
-"	001	27-Jul-2008	Split off from textobjects.vim
-"				file creation
+let s:save_cpo = &cpo
+set cpo&vim
 
 function! s:ListComparePositions( i1, i2 )
     if a:i1[1] == a:i2[1]
@@ -244,7 +178,10 @@ if exists('g:loaded_matchit') && g:loaded_matchit
 		echohl Question
 		    echo len(l:positions) . ' matches found. Delete (m)atches or (l)ines? '
 		echohl None
-		let l:action = tolower(ingo#query#get#ValidChar({'validExpr': '\c[ml]'}))
+		let l:action = tolower(ingo#query#get#ValidChar({
+		\   'validExpr': '\c[ml]',
+		\   'isAllowDigraphs': 0,
+		\}))
 	    elseif a:what =~# '^[l<]$'
 		let l:action = (l:isMultiLineMatch ? a:what : '-l')
 	    else
@@ -486,4 +423,6 @@ function! MatchTextObjects#RemoveEndEditStartVisual()
     endif
 endfunction
 
+let &cpo = s:save_cpo
+unlet s:save_cpo
 " vim: set ts=8 sts=4 sw=4 noexpandtab ff=unix fdm=syntax :
